@@ -1678,7 +1678,7 @@ export default function App() {
               <div style={{ fontSize: "44px", animation: "pulse 2s infinite" }}>🌙</div>
               <div>
                 <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-main)" }}>LunaChat</h2>
-                <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>Версия: 1.0.1</div>
+                <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>Версия: 1.0.2</div>
                 <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>Разработчик: Osipov Eduard</div>
               </div>
               <button 
