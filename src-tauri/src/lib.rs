@@ -23,11 +23,13 @@ enum NetworkPayload {
         id: String,
         username: String,
         status: String,
+        avatar: String,
     },
     Pong {
         id: String,
         username: String,
         status: String,
+        avatar: String,
     },
     Bye {
         id: String,
@@ -50,6 +52,7 @@ struct PeerInfo {
     status: String,
     ip: String,
     last_seen: u64,
+    avatar: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -57,6 +60,7 @@ struct MyInfo {
     id: String,
     username: String,
     status: String,
+    avatar: String,
 }
 
 struct AppState {
@@ -106,16 +110,19 @@ fn update_profile(
     state: State<'_, AppState>,
     username: String,
     status: String,
+    avatar: String,
 ) -> Result<(), String> {
     let mut my_info = state.my_info.lock().unwrap();
     my_info.username = username.clone();
     my_info.status = status.clone();
+    my_info.avatar = avatar.clone();
 
     // Broadcast our updated profile immediately
     let ping = NetworkPayload::Ping {
         id: my_info.id.clone(),
         username,
         status,
+        avatar,
     };
 
     if let Ok(serialized) = serde_json::to_string(&ping) {
@@ -178,7 +185,7 @@ fn start_network_listener(app_handle: AppHandle, socket: UdpSocket) {
                     let sender_ip = src.ip().to_string();
 
                     match payload {
-                        NetworkPayload::Ping { id, username, status } => {
+                        NetworkPayload::Ping { id, username, status, avatar } => {
                             if id != my_id {
                                 // Add/Update peer
                                 {
@@ -191,6 +198,7 @@ fn start_network_listener(app_handle: AppHandle, socket: UdpSocket) {
                                             status: status.clone(),
                                             ip: sender_ip.clone(),
                                             last_seen: current_timestamp(),
+                                            avatar: avatar.clone(),
                                         },
                                     );
                                 }
@@ -201,13 +209,14 @@ fn start_network_listener(app_handle: AppHandle, socket: UdpSocket) {
                                     id: my_id.clone(),
                                     username: my_username,
                                     status: my_status,
+                                    avatar: state.my_info.lock().unwrap().avatar.clone(),
                                 };
                                 if let Ok(serialized) = serde_json::to_string(&pong) {
                                     let _ = socket.send_to(serialized.as_bytes(), src);
                                 }
                             }
                         }
-                        NetworkPayload::Pong { id, username, status } => {
+                        NetworkPayload::Pong { id, username, status, avatar } => {
                             if id != my_id {
                                 {
                                     let mut peers = state.peers.lock().unwrap();
@@ -219,6 +228,7 @@ fn start_network_listener(app_handle: AppHandle, socket: UdpSocket) {
                                             status,
                                             ip: sender_ip,
                                             last_seen: current_timestamp(),
+                                            avatar,
                                         },
                                     );
                                 }
@@ -306,6 +316,7 @@ fn start_ping_broadcaster(app_handle: AppHandle, socket: UdpSocket) {
                 id: my_info.id,
                 username: my_info.username,
                 status: my_info.status,
+                avatar: my_info.avatar,
             };
 
             if let Ok(serialized) = serde_json::to_string(&ping) {
@@ -333,6 +344,7 @@ pub fn run() {
         id: my_id,
         username: my_username,
         status: "online".to_string(),
+        avatar: "🐱".to_string(),
     };
 
     tauri::Builder::default()

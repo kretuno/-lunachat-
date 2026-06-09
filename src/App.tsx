@@ -10,6 +10,7 @@ interface MyInfo {
   id: string;
   username: string;
   status: string;
+  avatar: string;
 }
 
 interface PeerInfo {
@@ -18,6 +19,7 @@ interface PeerInfo {
   status: string;
   ip: string;
   last_seen: number;
+  avatar: string;
 }
 
 interface GroupInfo {
@@ -151,6 +153,8 @@ function readFileAsBase64(file: File): Promise<string> {
   });
 }
 
+const PRESET_AVATARS = ["🐱", "🐶", "🦊", "🦁", "🐸", "🐼", "🐻", "🐨", "🐯", "🐰", "🦁", "🦄", "🐙", "🦀", "🦖", "🦊"];
+
 export default function App() {
   const [myInfo, setMyInfo] = useState<MyInfo | null>(null);
   const [peers, setPeers] = useState<PeerInfo[]>([]);
@@ -169,6 +173,7 @@ export default function App() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
   const [statusInput, setStatusInput] = useState("online");
+  const [avatarInput, setAvatarInput] = useState("🐱");
 
   // Bulletin Board
   const [bulletinOpen, setBulletinOpen] = useState(false);
@@ -221,6 +226,7 @@ export default function App() {
         setMyInfo(info);
         setUsernameInput(info.username);
         setStatusInput(info.status);
+        setAvatarInput(info.avatar || "🐱");
 
         const activePeers = await invoke<PeerInfo[]>("get_peers");
         setPeers(activePeers);
@@ -392,11 +398,7 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, activeTab]);
 
-  // Helper to extract initials
-  function getInitials(name: string): string {
-    if (!name) return "?";
-    return name.slice(0, 2).toUpperCase();
-  }
+
 
   // Handle profile update
   async function handleUpdateProfile(e: React.FormEvent) {
@@ -407,8 +409,9 @@ export default function App() {
       await invoke("update_profile", {
         username: usernameInput,
         status: statusInput,
+        avatar: avatarInput,
       });
-      setMyInfo((prev) => prev ? { ...prev, username: usernameInput, status: statusInput } : null);
+      setMyInfo((prev) => prev ? { ...prev, username: usernameInput, status: statusInput, avatar: avatarInput } : null);
       setIsEditingProfile(false);
     } catch (err) {
       console.error("Failed to update profile", err);
@@ -958,13 +961,13 @@ export default function App() {
           {myInfo && !isEditingProfile ? (
             <div className="profile-card">
               <div className="avatar-wrapper">
-                <div className="avatar">{getInitials(myInfo.username)}</div>
+                <div className="avatar" style={{ fontSize: "24px", display: "flex", alignItems: "center", justifyContent: "center" }}>{myInfo.avatar || "🐱"}</div>
                 <span className={`presence-dot presence-${myInfo.status}`} />
               </div>
               <div className="profile-info">
                 <div className="profile-name-row">
                   <div className="profile-name" title={myInfo.username}>{myInfo.username}</div>
-                  <button className="edit-btn" onClick={() => setIsEditingProfile(true)}>
+                  <button className="edit-btn" onClick={() => { setIsEditingProfile(true); setAvatarInput(myInfo.avatar || "🐱"); }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                   </button>
                 </div>
@@ -980,6 +983,34 @@ export default function App() {
                 placeholder="Имя пользователя"
                 maxLength={20}
               />
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", margin: "6px 0" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", alignSelf: "flex-start" }}>Выберите аватар:</span>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "flex-start", backgroundColor: "rgba(0,0,0,0.15)", padding: "6px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                  {PRESET_AVATARS.map((av) => (
+                    <button
+                      key={av}
+                      type="button"
+                      onClick={() => setAvatarInput(av)}
+                      style={{
+                        fontSize: "18px",
+                        background: avatarInput === av ? "var(--accent)" : "none",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "4px",
+                        cursor: "pointer",
+                        width: "30px",
+                        height: "30px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.15s"
+                      }}
+                    >
+                      {av}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <select value={statusInput} onChange={(e) => setStatusInput(e.target.value)}>
                 <option value="online">В сети</option>
                 <option value="away">Отошел</option>
@@ -1062,8 +1093,8 @@ export default function App() {
                 className={`list-item ${activeTab === peer.id ? "active" : ""}`}
                 onClick={() => setActiveTab(peer.id)}
               >
-                <div className="item-avatar">
-                  {getInitials(peer.username)}
+                <div className="item-avatar" style={{ fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {peer.avatar || "🐱"}
                   <span className={`presence-dot presence-${peer.status}`} />
                 </div>
                 <div className="item-info">
@@ -1236,7 +1267,12 @@ export default function App() {
               return (
                 <div key={msg.id} className={`message-group ${isMine ? "mine" : ""}`}>
                   <div className="message-content-wrapper">
-                    {!isMine && <div className="message-sender">{msg.sender_name}</div>}
+                    {!isMine && (
+                      <div className="message-sender" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ fontSize: "14px" }}>{peers.find(p => p.id === msg.sender_id)?.avatar || "🐱"}</span>
+                        {msg.sender_name}
+                      </div>
+                    )}
                     <div className="message-bubble">
                       {msg.content}
                       
@@ -1752,7 +1788,7 @@ export default function App() {
               <div style={{ fontSize: "44px", animation: "pulse 2s infinite" }}>🌙</div>
               <div>
                 <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-main)" }}>LunaChat</h2>
-                <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>Версия: 1.0.3</div>
+                <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>Версия: 1.0.4</div>
                 <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>Разработчик: Osipov Eduard</div>
               </div>
               <button 
