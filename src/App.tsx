@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import "./App.css";
 
 interface MyInfo {
@@ -192,6 +194,9 @@ export default function App() {
 
   // About App Modal
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const [hasUpdate, setHasUpdate] = useState(false);
 
   // Image Preview (Lightbox)
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
@@ -873,6 +878,75 @@ export default function App() {
   function formatTime(timestamp: number): string {
     const date = new Date(timestamp * 1000);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  const updateRef = useRef<any>(null);
+
+  async function handleCheckForUpdates() {
+    setCheckingUpdates(true);
+    setUpdateStatus("Поиск обновлений...");
+    setHasUpdate(false);
+    updateRef.current = null;
+
+    try {
+      const update = await check();
+      if (update) {
+        updateRef.current = update;
+        setHasUpdate(true);
+        setUpdateStatus(`Доступна новая версия: ${update.version}`);
+      } else {
+        setUpdateStatus("У вас установлена последняя версия.");
+      }
+    } catch (err) {
+      console.error("Failed to check for updates", err);
+      setUpdateStatus("Ошибка при проверке обновлений.");
+    } finally {
+      setCheckingUpdates(false);
+    }
+  }
+
+  async function handleInstallUpdate() {
+    if (!updateRef.current) return;
+    setCheckingUpdates(true);
+    setUpdateStatus("Загрузка обновления...");
+
+    try {
+      let downloaded = 0;
+      let contentLength = 0;
+      await updateRef.current.downloadAndInstall((event: any) => {
+        switch (event.event) {
+          case 'Started':
+            contentLength = event.data.contentLength || 0;
+            break;
+          case 'Progress':
+            downloaded += event.data.chunkLength;
+            if (contentLength > 0) {
+              const percent = Math.round((downloaded / contentLength) * 100);
+              setUpdateStatus(`Загрузка... ${percent}%`);
+            } else {
+              setUpdateStatus(`Загрузка... ${(downloaded / 1024).toFixed(0)} КБ`);
+            }
+            break;
+          case 'Finished':
+            setUpdateStatus("Установка...");
+            break;
+        }
+      });
+
+      setUpdateStatus("Обновление установлено! Перезапуск...");
+      setTimeout(async () => {
+        try {
+          await relaunch();
+        } catch (e) {
+          console.error("Failed to relaunch", e);
+          setUpdateStatus("Пожалуйста, перезапустите вручную.");
+        }
+      }, 1500);
+    } catch (err) {
+      console.error("Failed to install update", err);
+      setUpdateStatus(`Ошибка установки: ${err}`);
+      setCheckingUpdates(false);
+    }
   }
 
   return (
@@ -1678,7 +1752,7 @@ export default function App() {
               <div style={{ fontSize: "44px", animation: "pulse 2s infinite" }}>🌙</div>
               <div>
                 <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-main)" }}>LunaChat</h2>
-                <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>Версия: 1.0.2</div>
+                <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>Версия: 1.0.3</div>
                 <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>Разработчик: Osipov Eduard</div>
               </div>
               <button 
@@ -1703,7 +1777,7 @@ export default function App() {
                 }}
                 onClick={async () => {
                   try {
-                    await openUrl("https://send.monobank.ua/");
+                    await openUrl("https://send.monobank.ua/jar/mHTsyv3bB");
                   } catch (err) {
                     console.error("Failed to open link", err);
                   }
@@ -1711,9 +1785,59 @@ export default function App() {
               >
                 💛 Помочь проекту
               </button>
+
+              {/* Раздел авто-обновлений */}
+              <div style={{ width: "100%", borderTop: "1px solid var(--border-color)", paddingTop: "14px", marginTop: "4px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {updateStatus && (
+                  <div style={{ fontSize: "13px", color: "var(--text-main)", marginBottom: "4px" }}>
+                    {updateStatus}
+                  </div>
+                )}
+                {hasUpdate ? (
+                  <button
+                    type="button"
+                    className="post-btn"
+                    disabled={checkingUpdates}
+                    onClick={handleInstallUpdate}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      backgroundColor: "var(--accent)",
+                      border: "none",
+                      cursor: checkingUpdates ? "not-allowed" : "pointer",
+                      color: "white"
+                    }}
+                  >
+                    {checkingUpdates ? "Установка..." : "Установить и перезапустить"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    disabled={checkingUpdates}
+                    onClick={handleCheckForUpdates}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      border: "1px solid var(--border-color)",
+                      cursor: checkingUpdates ? "not-allowed" : "pointer",
+                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      color: "white"
+                    }}
+                  >
+                    {checkingUpdates ? "Проверка..." : "Проверить обновления"}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="modal-footer" style={{ justifyContent: "center", padding: "12px 20px" }}>
-              <button type="button" className="cancel-btn" onClick={() => setAboutOpen(false)} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 500 }}>Закрыть</button>
+              <button type="button" className="cancel-btn" onClick={() => { setAboutOpen(false); setUpdateStatus(null); setHasUpdate(false); }} style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 500 }}>Закрыть</button>
             </div>
           </div>
         </div>

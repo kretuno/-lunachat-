@@ -27,3 +27,6 @@ dist-ssr
 src-tauri/target
 src-tauri/gen/schemas
 
+# Private keys
+src-tauri/*.key
+
