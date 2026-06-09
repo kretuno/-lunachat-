@@ -1,10 +1,10 @@
 {
   "version": "1.0.3",
   "notes": "LunaChat v1.0.3 - Добавлена функция проверки обновлений и поддержка взносов на Monobank.",
-  "pub_date": "2026-06-09T07:27:00Z",
+  "pub_date": "2026-06-09T07:32:00Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSXRENXFKS3RZRlFoVzRGMFEyMk1JVUtaLzUyVFNyU0NOamtvNUpuSXEzR0pzb21RT1pDSTBRZWp6TU1PWVZUKzdVd2c0ZHNEWEtleENUVXRqRTJBUGNpQ0ptbXR4ekEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwOTkwMDAxCWZpbGU6bHVuYWNoYXQuYXBwLnRhci5negpFbGFidjN0Z1RmTjJuY3JaQjNUTjZiVjh5cUh5Q1ltdmZEUmpmUldXWVh3TWg3K0tqSldwUDlvb2ZEczBQaXZWR0M3UGg1bXg2Nm1OYS80RTR3cElBZz09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTSXRENXFKS3RZRlpndVhkLzNuYXhiMjFURHlYckIzaWgySDYzTlBKYXV0alVvZ3YvOEEybzB5YmlqREpPYzlNWDlXcWRXT01tS1Qrd0dwbk9IVnhJNUxiUUFlR051MVEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwOTkwMzI4CWZpbGU6bHVuYWNoYXQuYXBwLnRhci5negppWE5CRStvUS9sSW1nU1A2L2RNRFNTVTYxRS9JYk9VcDY5b1VLa25XcmpIZG9ZZmhTbHhZM1pFa1gyMDBibEZkaGNzN2VQTVUySUJsSno5UlBZbnRCdz09Cg==",
       "url": "https://github.com/kretuno/-lunachat-/releases/download/v1.0.3/lunachat.app.tar.gz"
     }
   }
